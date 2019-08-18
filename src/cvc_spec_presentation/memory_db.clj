@@ -50,9 +50,27 @@
     (d/transact conn item-transaction)))
 
 
+(defn- item->trx-sku [item]
+  {:item/sku (:sku item)})
 
 
 
-(save-item {:sku "kaue"
-            :description "some desc"
-            :quantity 100})
+
+(defn find-item [sku]
+  (d/q '[:find (pull ?s [*])
+        :in $ ?sku
+        :where [?s :item/sku ?sku]] (d/db conn) sku conn))
+
+(defn find-cart [uuid]
+  (d/q '[:find (pull ?u [*])
+        :in $ ?uuid
+        :where [?u :cart/uuid ?uuid]]
+       (d/db conn) uuid conn))
+
+(defn save-cart [cart]
+           (let [{:keys [uuid email items]} cart
+                 items-trx (map item->trx-sku items)
+                 cart-transaction [{:cart/uuid uuid
+                                    :cart/email email
+                                    :cart/items items-trx}]]
+             (d/transact conn cart-transaction)))
