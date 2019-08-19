@@ -6,11 +6,8 @@
 
 
 (def uri "datomic:mem://local")
-
 (d/create-database uri)
-
 (def conn (d/connect uri))
-
 (d/transact conn ss/item-schema)
 (d/transact conn ss/cart-schema)
 (d/transact conn ss/purchase-schema)
@@ -26,7 +23,8 @@
         :args (s/cat :item ::is/item)
         :ret some?)
 
-(defn- item->trx-sku [item]
+
+(defn- item->trx-sku [item]{:pre [(s/valid? ::is/item item)]}
        {:item/sku (:sku item)})
 
 
@@ -34,6 +32,14 @@
       (d/q '[:find (pull ?s [*])
              :in $ ?sku
              :where [?s :item/sku ?sku]] (d/db conn) sku conn))
+
+
+(defn- subtract-inv [item amount]
+  (let [db-item (get-in (find-item (:sku item)) [0 0])
+        inv-quantity (:item/inventory_quantity db-item)
+        remainder (- inv-quantity amount)]
+    (when (>= remainder 0)
+      (save-item (assoc item :quantity remainder)))))
 
 (defn find-cart [uuid]
       (d/q '[:find (pull ?u [*])
