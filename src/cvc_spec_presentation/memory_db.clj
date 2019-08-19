@@ -22,7 +22,6 @@
                                :item/description        description
                                :item/inventory_quantity quantity}]]
            (d/transact conn item-transaction)))
-
 (s/fdef save-item
         :args (s/cat :item ::is/item)
         :ret some?)
